@@ -58,30 +58,7 @@ sealed abstract class Instances {
         app(Function.const(DisjunctionT.left(IO(e))))
     }
 
-  implicit def monadReader[E, R]: MonadReader[App[E, ?, ?], R] =
-    new MonadReader[App[E, ?, ?], R] {
-      def bind[A, B](fa: App[E, R, A])(f: A => App[E, R, B]): App[E, R, B] =
-        monadError.bind(fa)(f)
+  implicit def monadReader[E, R]: MonadReader[App[E, ?, ?], R] = Kleisli.kleisliMonadReader[DisjunctionIO[E, ?], R]
 
-      def point[A](a: => A): App[E, R, A] =
-        monadError.point(a)
-
-      def ask: App[E, R, R] =
-        app(r => DisjunctionT.right(IO(r)))
-
-      def local[A](f: R => R)(fa: App[E, R, A]): App[E, R, A] =
-        app(r => fa.run(f(r)))
-    }
-
-  implicit def monadIO[E, R]: MonadIO[App[E, R, ?]] =
-    new MonadIO[App[E, R, ?]] {
-      def bind[A, B](fa: App[E, R, A])(f: A => App[E, R, B]): App[E, R, B] =
-        monadError.bind(fa)(f)
-
-      def point[A](a: => A): App[E, R, A] =
-        monadError.point(a)
-
-      def liftIO[A](ioa: IO[A]): App[E, R, A] =
-        LiftIO.kleisliLiftIO[DisjunctionIO[E, ?], R].liftIO(ioa)
-    }
+  implicit def monadIO[E, R]: MonadIO[App[E, R, ?]] = MonadIO.kleisliMonadIO[DisjunctionIO[E, ?], R]
 }
